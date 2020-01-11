@@ -1,0 +1,84 @@
+import numpy as np
+import pandas as pd
+from keras.models import Sequential
+from keras.layers import Dense,LSTM
+
+data2=pd.read_csv('train_1.csv',encoding='latin-1')
+data2.head()
+
+data2.size
+
+#cleaning the data
+import re
+data2['text'].head()
+data2['text']=data2['text'].apply(lambda x:str(x).lower())
+data2['text']=data2['text'].apply(lambda x:re.sub('[^a-zA-z0-9\s]','',x))
+indexs=data2[data2["text"]=="not available"].index
+data2.drop(indexs , inplace=True)
+data2.head()
+
+from sklearn.feature_extraction.text import CountVectorizer
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.models import Sequential
+from keras.layers import Dense, Embedding, LSTM, SpatialDropout1D ,Bidirectional
+from sklearn.model_selection import train_test_split
+from keras.utils.np_utils import to_categorical
+max_fature=2000
+tokenizer=Tokenizer(num_words=max_fature,split=' ')
+#print(tokenizer)
+Y=tokenizer.fit_on_texts(data2['text'].values)
+#print(Y)
+X = tokenizer.texts_to_sequences(data2['text'].values)
+X = pad_sequences(X)
+
+model.add(LSTM(lstm_out, dropout=0.5, recurrent_dropout=0.5,return_sequences=True))
+model.add(LSTM(lstm_out,dropout=0.5,recurrent_dropout=0.5))
+model.add(Dense(100))
+model.add(Dense(2,activation='relu'))
+model.compile(loss = 'mean_squared_error', optimizer='adam',metrics = ['accuracy'])
+print(model.summary())
+
+Y=pd.get_dummies(data2['stars'].values)
+Y.head()
+
+X_train, X_test, Y_train, Y_test = train_test_split(X,Y, test_size = 0.20, random_state = 42)
+print(X_train)
+print(X_train.shape)
+
+from keras.callbacks import ModelCheckpoint
+batch_size = 512
+filename = 'model_31.h5'
+checkpoint = ModelCheckpoint(filename, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
+history=model.fit(X_train, Y_train, epochs = 8, batch_size=batch_size,validation_split = 0.2,callbacks=[checkpoint], verbose = 1)
+
+model.evaluate(X_test,Y_test,verbose=1)
+
+from keras.models import load_model
+import matplotlib.pyplot as plt
+print(history.history.keys())
+plt.plot(history.history['acc'])
+plt.plot(history.history['val_acc'])
+plt.legend(['train','test'])
+plt.show()
+
+from keras.models import load_model
+import matplotlib.pyplot as plt
+
+model=load_model('model_31.h5')
+
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.legend(['train','test'])
+plt.show()
+
+twt = ['i am sad']
+#vectorizing the tweet by the pre-fitted tokenizer instance
+twt = tokenizer.texts_to_sequences(twt)
+#padding the tweet to have exactly the same shape as `embedding_2` input
+twt = pad_sequences(twt, maxlen=882, dtype='int32', value=0)
+sentiment = model.predict(twt,batch_size=1,verbose = 2)[0]
+if(np.argmax(sentiment) == 0):
+    print("negative")
+elif (np.argmax(sentiment) == 1):
+    print("positive")
